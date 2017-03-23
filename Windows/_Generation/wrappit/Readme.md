@@ -32,7 +32,7 @@ md build & md bin & cl.exe /EHsc /D_USE_BCPP_ /I include /Fobuild\wrappit.obj /F
   
   
 # Important Information  
-* This won't work for creating 64-bit DLLs (In-line assembly isn't supported on x64)  
+* This won't work for creating 64-bit DLLs (In-line assembly isn't supported on x64), and it is recommended to use Lin Min's DLL Wrapper Generator instead (located in ../DLL Wrapper Gen).  
 * The files in the /include and /lib directories are shared library files and should only be used if issues are encountered when using default the directories (C:\Program Files (x86)\Windows Kits\*); an example is that cl.exe can have issues locating the default directories if the user has certain other things installed.  
 
 
