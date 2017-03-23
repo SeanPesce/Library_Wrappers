@@ -1,5 +1,5 @@
 # Library Wrappers  
 
-A compilation of shared library wrapper templates (for Windows and Linux) from various authors.  
+A compilation of shared library wrapper templates and generation tools (for Windows and Linux) from various authors.  
   
 Compiled by Sean Pesce
