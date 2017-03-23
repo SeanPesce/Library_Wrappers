@@ -1,5 +1,8 @@
 // wrappit.cpp : Defines the entry point for the console application.
 // 1.1
+// Author: Michael Chourdakis
+
+// Small additions by Sean Pesce marked with '@SP'
 
 
 #include <windows.h>
@@ -30,7 +33,7 @@ int main(int argc, char* argv[])
 
 	if (argc < 7)
 	{
-		printf("Error 0: Too few arguments. Exiting...\r\n");
+		printf("Error 0: Too few arguments. Exiting...\r\n");	// @SP - Added error message instead of silent exit with no feedback
 		return 0;
 	}
 
@@ -243,7 +246,7 @@ int main(int argc, char* argv[])
 
 
 	TCHAR ay[1000] = {0};
-	#ifdef _USE_BCPP_
+	#ifdef _USE_BCPP_		// @SP - Replaced original "comment out what you don't want" method with preprocessor conditional to determine compiler settings (cleaner and easier)
 		// Compile and link DLLs with BC++:
 		_stprintf(ay, _T("BCC32 -o%s.obj -c %s\r\n"), argv[5], argv[5]);
 		system(ay);
