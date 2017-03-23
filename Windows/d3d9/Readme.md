@@ -8,3 +8,6 @@ A DLL wrapper template for intercepting DirectX9 function calls.
 # Source
 http://www.codeguru.com/cpp/g-m/directx/directx8/article.php/c11453/Intercept-Calls-to-DirectX-with-a-Proxy-DLL.htm  
   
+# Important Information  
+The file in the /lib directory is a shared library file and should only be used if there are issues using the default library directory.
+  

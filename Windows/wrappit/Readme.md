@@ -33,7 +33,7 @@ md build & md bin & cl.exe /EHsc /D_USE_BCPP_ /I include /Fobuild\wrappit.obj /F
   
 # Important Information  
 * This won't work for creating 64-bit DLLs (In-line assembly isn't supported on x64)  
-* The files in the /include and /lib directories are shared library files, but cl.exe can have issues locating their default directories (C:\Program Files (x86)\Windows Kits\*) if the user has certain other things installed. For this reason, these shared files have been included in the local directory to avoid issues.  
+* The files in the /include and /lib directories are shared library files and should only be used if issues are encountered when using default the directories (C:\Program Files (x86)\Windows Kits\*); an example is that cl.exe can have issues locating the default directories if the user has certain other things installed.  
 
 
 
