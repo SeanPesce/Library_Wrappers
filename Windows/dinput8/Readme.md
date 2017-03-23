@@ -1,5 +1,5 @@
-## dinput8.dll proxy  
-Made by Google  
+## dinput8.dll Proxy  
+Author: Google  
 Mar 15, 2013  
   
 DirectX® up through version 11 uses the old dinput8 dynamic-link library.  
@@ -24,7 +24,7 @@ The files included are a bare bones minimum proxy, as hacks generally must be wr
   
 ```c
   
-\#include "dinputproxy.h"  
+#include "dinputproxy.h"  
   
   
 HRESULT STDMETHODCALLTYPE proxy_IDirectInputDevice_GetDeviceData(struct IDirectInputDevice *idid, DWORD cbObjectData, LPDIDEVICEOBJECTDATA rgdod, LPDWORD pdwInOut, DWORD dwFlags) { proxy_IDirectInputDevice *proxydid = (proxy_IDirectInputDevice *)idid; DIDEVICEOBJECTDATA data[128]; DWORD dwCount; HRESULT ret;  

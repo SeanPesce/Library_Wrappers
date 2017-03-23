@@ -1,5 +1,7 @@
 ## Wrappit  
-Made by Michael Chourdakis  
+Author: Michael Chourdakis  
+May 14, 2007  
+  
   
 # Description  
 Wrappit is an automatic proxy DLL generator for 32-bit DLLs.  
@@ -29,9 +31,9 @@ md build & md bin & cl.exe /EHsc /D_USE_BCPP_ /I include /Fobuild\wrappit.obj /F
 ```  
   
   
-NOTE: This won't work for creating proxy DLLs for 64-bit DLLs. You can try editing the final generated .cpp file and changing every jmp [n*4] instruction to jmp [n*8] instead.  
-  
-NOTE: The files in the /include and /lib directories are shared library files, but cl.exe can have issues locating their default directories (C:\Program Files (x86)\Windows Kits\*) if the user has certain other things installed. For this reason, these shared files have been included in the local directory to avoid issues.  
+# Important Information  
+* This won't work for creating 64-bit DLLs (In-line assembly isn't supported on x64)  
+* The files in the /include and /lib directories are shared library files, but cl.exe can have issues locating their default directories (C:\Program Files (x86)\Windows Kits\*) if the user has certain other things installed. For this reason, these shared files have been included in the local directory to avoid issues.  
 
 
 
