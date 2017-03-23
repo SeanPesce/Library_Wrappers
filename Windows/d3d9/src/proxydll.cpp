@@ -76,7 +76,7 @@ void LoadOriginalDll(void)
 	::GetSystemDirectory(buffer,MAX_PATH);
 
 	// Append dll name
-	strcat(buffer,"\\d3d9.dll");
+	strcat_s(buffer,"\\d3d9.dll");
 	
 	// try to load the system's d3d9.dll, if pointer empty
 	if (!gl_hOriginalDll) gl_hOriginalDll = ::LoadLibrary(buffer);
