@@ -1,0 +1,3 @@
+[submodule "Windows/_Generation/DLL Wrapper Gen"]
+	path = Windows/_Generation/DLL Wrapper Gen
+	url = https://github.com/mavenlin/Dll_Wrapper_Gen.git
