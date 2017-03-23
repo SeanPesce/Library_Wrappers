@@ -119,7 +119,7 @@ HRESULT __stdcall myIDirect3D8::CreateDevice(UINT Adapter,D3DDEVTYPE DeviceType,
 	// we intercept this call and provide our own "fake" Device Object
 	HRESULT hres = m_pIDirect3D8->CreateDevice( Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
     
-	// Create our own Device object and strore it in global pointer
+	// Create our own Device object and store it in global pointer
 	// note: the object will delete itself once Ref count is zero (similar to COM objects)
 	gl_pmyIDirect3DDevice8 = new myIDirect3DDevice8(*ppReturnedDeviceInterface);
 	
