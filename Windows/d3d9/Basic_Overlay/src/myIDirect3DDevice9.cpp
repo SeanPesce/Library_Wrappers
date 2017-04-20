@@ -5,16 +5,35 @@
 #include "myIDirect3DDevice9.h"
 #include <d3dx9core.h>
 
-// Data structures for the text overlay:
-D3DRECT text_background;
-RECT text_box;
-ID3DXFont* SP_font = NULL;
-TCHAR *SP_font_name = "Arial";
+#define _SP_DEFAULT_TEXT_SHADOW_OFFSET_ 2
+#define _SP_DEFAULT_TEXT_BORDER_THICKNESS_ 2
 
-bool font_initialized = false;
+enum overlay_text_types {
+	SP_TEXT_OUTLINED,
+	SP_TEXT_SHADOWED,
+	SP_TEXT_SOLID_BACKGROUND
+};
+
+// Data structures for the text overlay:
+extern D3DRECT text_background;
+extern RECT text_box;
+extern RECT text_shadow_box;
+extern RECT text_outline_boxes[8];
+extern ID3DXFont* SP_font;
+extern TCHAR *SP_font_name;
+
+// Constants & Variables:
+extern bool font_initialized;
+extern int overlay_text_type;
+extern const char *example_overlay_text;
 
 void SP_init_text_box(RECT *text_box, D3DRECT *text_background, int x1, int y1, int x2, int y2);
 void SP_display_text_box(LPDIRECT3DDEVICE9 device, RECT *text_box, D3DRECT *text_background, ID3DXFont *font, const char *text);
+void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2, int shadow_x_offset, int shadow_y_offset);
+void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2);
+void SP_display_text_shadowed(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_shadow_box, ID3DXFont *font, const char *text);
+void SP_init_text_outlined(RECT *text_box, RECT *text_outline_boxes, int x1, int y1, int x2, int y2);
+void SP_display_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, const char *text);
 
 myIDirect3DDevice9::myIDirect3DDevice9(IDirect3DDevice9* pOriginal)
 {
@@ -271,6 +290,8 @@ HRESULT myIDirect3DDevice9::EndScene(void)
 {
 	if (!font_initialized)
 	{
+		overlay_text_type = SP_TEXT_OUTLINED;
+
 		// Initialize font
 		HRESULT SP_font_hr = D3DXCreateFont(
 			m_pIDirect3DDevice9,	// D3D device (can also use "this")
@@ -291,12 +312,27 @@ HRESULT myIDirect3DDevice9::EndScene(void)
 			// Handle error
 		}
 
-		SP_init_text_box(&text_box, &text_background, 0, 0, 350, 30);
+		SP_init_text_box(&text_box, &text_background, 2, 2, 352, 32);
+
+		SP_init_text_shadowed(&text_box, &text_shadow_box, 2, 2, 352, 32);
+
+		SP_init_text_outlined(&text_box, text_outline_boxes, 2, 2, 352, 32);
 
 		font_initialized = true;
 	}
 
-	SP_display_text_box(m_pIDirect3DDevice9, &text_box, &text_background, SP_font, "Example overlay by Sean Pesce");
+	switch (overlay_text_type) {
+		case SP_TEXT_SOLID_BACKGROUND:
+			SP_display_text_box(m_pIDirect3DDevice9, &text_box, &text_background, SP_font, example_overlay_text);
+			break;
+		case SP_TEXT_SHADOWED:
+			SP_display_text_shadowed(m_pIDirect3DDevice9, &text_box, &text_shadow_box, SP_font, example_overlay_text);
+			break;
+		case SP_TEXT_OUTLINED:
+		default:
+			SP_display_text_outlined(m_pIDirect3DDevice9, &text_box, text_outline_boxes, SP_font, example_overlay_text);
+			break;
+	}
 
     return(m_pIDirect3DDevice9->EndScene());
 }
@@ -693,5 +729,95 @@ void SP_init_text_box(RECT *text_box, D3DRECT *text_background, int x1, int y1, 
 void SP_display_text_box(LPDIRECT3DDEVICE9 device, RECT *text_box, D3DRECT *text_background, ID3DXFont *font, const char *text)
 {
 	device->Clear(1, text_background, D3DCLEAR_TARGET, D3DCOLOR_ARGB(127, 0, 0, 0), 0, 0);
+	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
+void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2, int shadow_x_offset, int shadow_y_offset)
+{
+	SetRect(text_box, x1, y1, x2, y2);
+	if (text_shadow_box != NULL)
+	{
+		SetRect(text_shadow_box, x1 + shadow_x_offset, y1 + shadow_y_offset, x2 + shadow_x_offset, y2 + shadow_y_offset);
+	}
+}
+
+void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2)
+{
+	SetRect(text_box, x1, y1, x2, y2);
+	if (text_shadow_box != NULL)
+	{
+		SetRect(text_shadow_box,
+				x1 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
+				y1 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
+				x2 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
+				y2 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_);
+	}
+}
+
+
+void SP_display_text_shadowed(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_shadow_box, ID3DXFont *font, const char *text)
+{
+	font->DrawText(NULL, text, -1, text_shadow_box, DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
+void SP_init_text_outlined(RECT *text_box, RECT *text_outline_boxes, int x1, int y1, int x2, int y2)
+{
+	SetRect(text_box, x1, y1, x2, y2);
+	if (text_outline_boxes != NULL)
+	{
+		SetRect(&text_outline_boxes[0],
+				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
+		SetRect(&text_outline_boxes[1],
+				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
+		SetRect(&text_outline_boxes[2],
+				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
+		SetRect(&text_outline_boxes[3],
+				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
+		SetRect(&text_outline_boxes[4],
+				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				y1,
+				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				y2);
+		SetRect(&text_outline_boxes[5],
+				x1,
+				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				x2,
+				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
+		SetRect(&text_outline_boxes[6],
+				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				y1,
+				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				y2);
+		SetRect(&text_outline_boxes[7],
+				x1,
+				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
+				x2,
+				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
+	}
+}
+
+void SP_display_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, const char *text)
+{
+	font->DrawText(NULL, text, -1, &text_outline_boxes[0], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[1], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[2], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[3], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[4], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[5], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[6], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
+	font->DrawText(NULL, text, -1, &text_outline_boxes[7], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
 	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
 }
