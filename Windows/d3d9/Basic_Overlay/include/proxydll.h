@@ -6,12 +6,17 @@
 #include <d3dx9core.h>
 
 // Data structures for the text overlay:
+D3DDEVICE_CREATION_PARAMETERS creation_params;
 D3DRECT text_background;
+RECT window_rect;
+RECT fullscreen_text_overlay_rect;
+RECT fullscreen_text_outline_overlay_rects[8];
 RECT text_box;
 RECT text_shadow_box;
 RECT text_outline_boxes[8];
 ID3DXFont* SP_font = NULL;
 TCHAR *SP_font_name = "Arial";
+DWORD text_format = DT_NOCLIP|DT_CENTER|DT_VCENTER;
 
 // Constants & Variables:
 bool font_initialized = false;
