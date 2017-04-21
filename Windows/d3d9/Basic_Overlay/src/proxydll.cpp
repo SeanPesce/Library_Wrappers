@@ -48,7 +48,7 @@ IDirect3D9* WINAPI Direct3DCreate9(UINT SDKVersion)
 	// Request pointer from Original Dll. 
 	IDirect3D9 *pIDirect3D9_orig = D3DCreate9_fn(SDKVersion);
 	
-	// Create my IDirect3D8 object and store pointer to original object there.
+	// Create my IDirect3D9 object and store pointer to original object there.
 	// Note: the object will delete itself once Ref count is zero (similar to COM objects)
 	gl_pmyIDirect3D9 = new myIDirect3D9(pIDirect3D9_orig);
 	
@@ -74,7 +74,7 @@ void LoadOriginalDll(void)
 {
     char buffer[MAX_PATH];
     
-    // Getting path to system dir and to d3d8.dll
+    // Getting path to system dir and to d3d9.dll
 	::GetSystemDirectory(buffer,MAX_PATH);
 
 	// Append dll name

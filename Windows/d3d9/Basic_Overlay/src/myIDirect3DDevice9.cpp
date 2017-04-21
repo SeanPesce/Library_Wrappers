@@ -3,48 +3,30 @@
 
 #include "StdAfx.h"
 #include "myIDirect3DDevice9.h"
-#include <d3dx9core.h>
-
-#define _SP_DEFAULT_TEXT_SHADOW_OFFSET_ 2
-#define _SP_DEFAULT_TEXT_BORDER_THICKNESS_ 2
-
-enum overlay_text_types {
-	SP_TEXT_OUTLINED,
-	SP_TEXT_SHADOWED,
-	SP_TEXT_SOLID_BACKGROUND
-};
-
-// Data structures for the text overlay:
-extern D3DDEVICE_CREATION_PARAMETERS creation_params;
-extern D3DRECT text_background;
-extern RECT window_rect;
-extern RECT fullscreen_text_overlay_rect;
-extern RECT fullscreen_text_outline_overlay_rects[8];
-extern RECT text_box;
-extern RECT text_shadow_box;
-extern RECT text_outline_boxes[8];
-extern ID3DXFont* SP_font;
-extern TCHAR *SP_font_name;
-extern DWORD text_format;
 
 // Constants & Variables:
-extern bool font_initialized;
-extern int overlay_text_type;
 extern const char *example_overlay_text;
-
-void SP_init_fullscreen_overlay_text_outlined(LPDIRECT3DDEVICE9 device, D3DDEVICE_CREATION_PARAMETERS *creation_params, RECT *window_rect, RECT *text_box, RECT *text_outline_boxes);
-void SP_display_fullscreen_overlay_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, DWORD text_format, const char *text);
-void SP_init_text_box(RECT *text_box, D3DRECT *text_background, int x1, int y1, int x2, int y2);
-void SP_display_text_box(LPDIRECT3DDEVICE9 device, RECT *text_box, D3DRECT *text_background, ID3DXFont *font, const char *text);
-void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2, int shadow_x_offset, int shadow_y_offset);
-void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2);
-void SP_display_text_shadowed(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_shadow_box, ID3DXFont *font, const char *text);
-void SP_init_text_outlined(RECT *text_box, RECT *text_outline_boxes, int x1, int y1, int x2, int y2);
-void SP_display_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, const char *text);
 
 myIDirect3DDevice9::myIDirect3DDevice9(IDirect3DDevice9* pOriginal)
 {
     m_pIDirect3DDevice9 = pOriginal; // Store the pointer to original object
+	
+	D3DDEVICE_CREATION_PARAMETERS creation_params;
+	m_pIDirect3DDevice9->GetCreationParameters(&creation_params);
+	GetClientRect(creation_params.hFocusWindow, &window_rect);
+
+	// Initialize fullscreen text overlay
+	SP_DX9_init_text_overlay(_SP_DEFAULT_TEXT_HEIGHT_,
+							_SP_DEFAULT_TEXT_BORDER_THICKNESS_,
+							_SP_DEFAULT_TEXT_SHADOW_X_OFFSET_,
+							_SP_DEFAULT_TEXT_SHADOW_Y_OFFSET_,
+							_SP_DEFAULT_TEXT_COLOR_,
+							_SP_DEFAULT_TEXT_BORDER_COLOR_,
+							_SP_DEFAULT_TEXT_SHADOW_COLOR_,
+							_SP_DEFAULT_TEXT_FORMAT_,
+							_SP_DEFAULT_TEXT_STYLE_);
+	
+	text_overlay.text = example_overlay_text;  // Remove this statement in non-example implementation
 }
 
 myIDirect3DDevice9::~myIDirect3DDevice9(void)
@@ -295,55 +277,9 @@ HRESULT myIDirect3DDevice9::BeginScene(void)
 
 HRESULT myIDirect3DDevice9::EndScene(void)
 {
-	if (!font_initialized)
-	{
-		overlay_text_type = SP_TEXT_OUTLINED;
+	// Draw anything you want before the scene is shown to the user
 
-		// Initialize font
-		HRESULT SP_font_hr = D3DXCreateFont(
-			m_pIDirect3DDevice9,	// D3D device (can also use "this")
-			28,						// Height
-			0,						// Width
-			FW_BOLD,				// Weight
-			1,						// MipLevels, 0 = autogen mipmaps
-			FALSE,					// Italic
-			DEFAULT_CHARSET,		// CharSet
-			OUT_DEFAULT_PRECIS,		// OutputPrecision
-			ANTIALIASED_QUALITY,	// Quality
-			DEFAULT_PITCH | FF_DONTCARE, // PitchAndFamily
-			SP_font_name,				// pFaceName
-			&SP_font);				// ppFont
-
-		if (FAILED(SP_font_hr))
-		{
-			// Handle error
-		}
-
-		SP_init_fullscreen_overlay_text_outlined(m_pIDirect3DDevice9, &creation_params, &window_rect, &fullscreen_text_overlay_rect, fullscreen_text_outline_overlay_rects);
-
-		SP_init_text_box(&text_box, &text_background, 2, 2, 352, 32);
-
-		SP_init_text_shadowed(&text_box, &text_shadow_box, 2, 2, 352, 32);
-
-		SP_init_text_outlined(&text_box, text_outline_boxes, 2, 2, 352, 32);
-
-		font_initialized = true;
-	}
-
-	/*switch (overlay_text_type) {
-		case SP_TEXT_SOLID_BACKGROUND:
-			SP_display_text_box(m_pIDirect3DDevice9, &text_box, &text_background, SP_font, example_overlay_text);
-			break;
-		case SP_TEXT_SHADOWED:
-			SP_display_text_shadowed(m_pIDirect3DDevice9, &text_box, &text_shadow_box, SP_font, example_overlay_text);
-			break;
-		case SP_TEXT_OUTLINED:
-		default:
-			SP_display_text_outlined(m_pIDirect3DDevice9, &text_box, text_outline_boxes, SP_font, example_overlay_text);
-			break;
-	}*/
-
-	SP_display_fullscreen_overlay_text_outlined(m_pIDirect3DDevice9, &fullscreen_text_overlay_rect, fullscreen_text_outline_overlay_rects, SP_font, text_format, example_overlay_text);
+	SP_DX9_draw_text_overlay();
 
     return(m_pIDirect3DDevice9->EndScene());
 }
@@ -728,7 +664,7 @@ HRESULT myIDirect3DDevice9::CreateQuery(D3DQUERYTYPE Type,IDirect3DQuery9** ppQu
     return(m_pIDirect3DDevice9->CreateQuery(Type,ppQuery));
 }
 
-void SP_init_text_box(RECT *text_box, D3DRECT *text_background, int x1, int y1, int x2, int y2)
+/* void SP_init_text_box(RECT *text_box, D3DRECT *text_background, int x1, int y1, int x2, int y2)
 {
 	SetRect(text_box, x1, y1, x2, y2);
 	if (text_background != NULL)
@@ -741,162 +677,173 @@ void SP_display_text_box(LPDIRECT3DDEVICE9 device, RECT *text_box, D3DRECT *text
 {
 	device->Clear(1, text_background, D3DCLEAR_TARGET, D3DCOLOR_ARGB(127, 0, 0, 0), 0, 0);
 	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
-}
+}*/
 
-void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2, int shadow_x_offset, int shadow_y_offset)
+void myIDirect3DDevice9::SP_DX9_draw_text_overlay()
 {
-	SetRect(text_box, x1, y1, x2, y2);
-	if (text_shadow_box != NULL)
-	{
-		SetRect(text_shadow_box, x1 + shadow_x_offset, y1 + shadow_y_offset, x2 + shadow_x_offset, y2 + shadow_y_offset);
+
+	switch (text_overlay.text_style) {
+		case SP_DX9_SHADOWED_TEXT:
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_shadow_rect[1], text_overlay.text_format, text_overlay.text_shadow_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_shadow_rect[0], text_overlay.text_format, text_overlay.text_color);
+			break;
+		case SP_DX9_PLAIN_TEXT:
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &window_rect, text_overlay.text_format, text_overlay.text_color);
+			break;
+		case SP_DX9_BORDERED_TEXT:
+		default:
+			// Draw bordered text
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[1], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[2], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[3], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[4], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[5], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[6], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[7], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[8], text_overlay.text_format, text_overlay.text_border_color);
+			text_overlay.font->DrawText(NULL, text_overlay.text, -1, &text_overlay.text_outline_rect[0], text_overlay.text_format, text_overlay.text_color);
+			break;
 	}
 }
 
-void SP_init_text_shadowed(RECT *text_box, RECT *text_shadow_box, int x1, int y1, int x2, int y2)
+void myIDirect3DDevice9::SP_DX9_init_text_overlay(int text_height,
+												unsigned int text_border_thickness,
+												int text_shadow_x_offset,
+												int text_shadow_y_offset,
+												D3DXCOLOR text_color,
+												D3DXCOLOR text_border_color,
+												D3DXCOLOR text_shadow_color,
+												DWORD text_format,
+												int text_style)
 {
-	SetRect(text_box, x1, y1, x2, y2);
-	if (text_shadow_box != NULL)
+	if (strcpy_s(text_overlay.font_name, _SP_DEFAULT_TEXT_FONT_) != 0)
 	{
-		SetRect(text_shadow_box,
-				x1 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
-				y1 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
-				x2 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_,
-				y2 + _SP_DEFAULT_TEXT_SHADOW_OFFSET_);
+		// Handle error
 	}
-}
 
-
-void SP_display_text_shadowed(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_shadow_box, ID3DXFont *font, const char *text)
-{
-	font->DrawText(NULL, text, -1, text_shadow_box, DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
-}
-
-void SP_init_text_outlined(RECT *text_box, RECT *text_outline_boxes, int x1, int y1, int x2, int y2)
-{
-	SetRect(text_box, x1, y1, x2, y2);
-	if (text_outline_boxes != NULL)
+	// Initialize overlay font
+	HRESULT font_hr = D3DXCreateFont(
+		m_pIDirect3DDevice9,	// D3D device (can also use "this")
+		text_height,			// Height
+		0,						// Width
+		FW_BOLD,				// Weight
+		1,						// MipLevels, 0 = autogen mipmaps
+		FALSE,					// Italic
+		DEFAULT_CHARSET,		// CharSet
+		OUT_DEFAULT_PRECIS,		// OutputPrecision
+		ANTIALIASED_QUALITY,	// Quality
+		DEFAULT_PITCH | FF_DONTCARE, // PitchAndFamily
+		text_overlay.font_name,	// pFaceName
+		&text_overlay.font);	// ppFont
+	if (FAILED(font_hr))
 	{
-		SetRect(&text_outline_boxes[0],
-				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[1],
-				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[2],
-				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[3],
-				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[4],
-				x1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				y1,
-				x2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				y2);
-		SetRect(&text_outline_boxes[5],
-				x1,
-				y1 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				x2,
-				y2 - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
-		SetRect(&text_outline_boxes[6],
-				x1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				y1,
-				x2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				y2);
-		SetRect(&text_outline_boxes[7],
-				x1,
-				y1 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-				x2,
-				y2 + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
+		// Handle error
 	}
-}
 
-void SP_display_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, const char *text)
-{
-	font->DrawText(NULL, text, -1, &text_outline_boxes[0], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[1], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[2], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[3], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[4], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[5], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[6], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[7], DT_NOCLIP, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, text_box, DT_NOCLIP, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
-}
 
-void SP_init_fullscreen_overlay_text_outlined(LPDIRECT3DDEVICE9 device, D3DDEVICE_CREATION_PARAMETERS *creation_params, RECT *window_rect, RECT *text_box, RECT *text_outline_boxes)
-{
-	device->GetCreationParameters(creation_params);
-	GetClientRect(creation_params->hFocusWindow, window_rect);
-	SetRect(text_box,
-		window_rect->left + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-		window_rect->top + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-		window_rect->right - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-		window_rect->bottom - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
+	// Set text colors, style, and format
+	text_overlay.text_color = text_color;
+	text_overlay.text_border_color = text_border_color;
+	text_overlay.text_shadow_color = text_shadow_color;
+	text_overlay.text_format = text_format;
+	text_overlay.text_style = text_style;
 
-	if (text_outline_boxes != NULL)
+
+
+	// Inititialize main shadowed text rect
+	if (text_shadow_x_offset >= 0 && text_shadow_y_offset >= 0)
 	{
-		SetRect(&text_outline_boxes[0],
-			text_box->left - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->top - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->right - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->bottom - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[1],
-			text_box->left + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->top - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->right + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->bottom - _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[2],
-			text_box->left - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->top + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->right - _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->bottom + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[3],
-			text_box->left + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->top + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->right + _SP_DEFAULT_TEXT_BORDER_THICKNESS_,
-			text_box->bottom + _SP_DEFAULT_TEXT_BORDER_THICKNESS_);
-		SetRect(&text_outline_boxes[4],
-			text_box->left - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->top,
-			text_box->right - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->bottom);
-		SetRect(&text_outline_boxes[5],
-			text_box->left,
-			text_box->top - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->right,
-			text_box->bottom - _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
-		SetRect(&text_outline_boxes[6],
-			text_box->left + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->top,
-			text_box->right + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->bottom);
-		SetRect(&text_outline_boxes[7],
-			text_box->left,
-			text_box->top + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1,
-			text_box->right,
-			text_box->bottom + _SP_DEFAULT_TEXT_BORDER_THICKNESS_ + 1);
+		// x and y offsets are both positive
+		SetRect(&text_overlay.text_shadow_rect[0],
+			window_rect.left,
+			window_rect.top,
+			window_rect.right - text_shadow_x_offset,
+			window_rect.bottom - text_shadow_y_offset);
 	}
-}
+	else if(text_shadow_x_offset <= 0 && text_shadow_y_offset >= 0)
+	{
+		// x offset is negative; y offset is positive
+		SetRect(&text_overlay.text_shadow_rect[0],
+			window_rect.left - text_shadow_x_offset,
+			window_rect.top,
+			window_rect.right,
+			window_rect.bottom - text_shadow_y_offset);
+	}
+	else if (text_shadow_x_offset >= 0 && text_shadow_y_offset <= 0)
+	{
+		// x offset is positive; y offset is negative
+		SetRect(&text_overlay.text_shadow_rect[0],
+			window_rect.left,
+			window_rect.top - text_shadow_y_offset,
+			window_rect.right - text_shadow_x_offset,
+			window_rect.bottom);
+	}
+	else
+	{
+		// x and y offsets are both negative
+		SetRect(&text_overlay.text_shadow_rect[0],
+			window_rect.left - text_shadow_x_offset,
+			window_rect.top - text_shadow_y_offset,
+			window_rect.right,
+			window_rect.bottom);
+	}
 
-void SP_display_fullscreen_overlay_text_outlined(LPDIRECT3DDEVICE9 device, RECT *text_box, RECT *text_outline_boxes, ID3DXFont *font, DWORD text_format, const char *text)
-{
-	font->DrawText(NULL, text, -1, &text_outline_boxes[0], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[1], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[2], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[3], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[4], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[5], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[6], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, &text_outline_boxes[7], text_format, D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f));
-	font->DrawText(NULL, text, -1, text_box, text_format, D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
+
+	// Initialize text shadow rect
+	SetRect(&text_overlay.text_shadow_rect[1],
+		text_overlay.text_shadow_rect[0].left + text_shadow_x_offset,
+		text_overlay.text_shadow_rect[0].top + text_shadow_y_offset,
+		text_overlay.text_shadow_rect[0].right + text_shadow_x_offset,
+		text_overlay.text_shadow_rect[0].bottom + text_shadow_y_offset);
+
+
+	// Inititialize main bordered text rect
+	SetRect(&text_overlay.text_outline_rect[0],
+		window_rect.left + text_border_thickness,
+		window_rect.top + text_border_thickness,
+		window_rect.right - text_border_thickness,
+		window_rect.bottom - text_border_thickness);
+
+
+	// Initialize text border rects
+	SetRect(&text_overlay.text_outline_rect[1],
+		text_overlay.text_outline_rect[0].left - text_border_thickness,
+		text_overlay.text_outline_rect[0].top - text_border_thickness,
+		text_overlay.text_outline_rect[0].right - text_border_thickness,
+		text_overlay.text_outline_rect[0].bottom - text_border_thickness);
+	SetRect(&text_overlay.text_outline_rect[2],
+		text_overlay.text_outline_rect[0].left + text_border_thickness,
+		text_overlay.text_outline_rect[0].top - text_border_thickness,
+		text_overlay.text_outline_rect[0].right + text_border_thickness,
+		text_overlay.text_outline_rect[0].bottom - text_border_thickness);
+	SetRect(&text_overlay.text_outline_rect[3],
+		text_overlay.text_outline_rect[0].left - text_border_thickness,
+		text_overlay.text_outline_rect[0].top + text_border_thickness,
+		text_overlay.text_outline_rect[0].right - text_border_thickness,
+		text_overlay.text_outline_rect[0].bottom + text_border_thickness);
+	SetRect(&text_overlay.text_outline_rect[4],
+		text_overlay.text_outline_rect[0].left + text_border_thickness,
+		text_overlay.text_outline_rect[0].top + text_border_thickness,
+		text_overlay.text_outline_rect[0].right + text_border_thickness,
+		text_overlay.text_outline_rect[0].bottom + text_border_thickness);
+	SetRect(&text_overlay.text_outline_rect[5],
+		text_overlay.text_outline_rect[0].left - text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].top,
+		text_overlay.text_outline_rect[0].right - text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].bottom);
+	SetRect(&text_overlay.text_outline_rect[6],
+		text_overlay.text_outline_rect[0].left,
+		text_overlay.text_outline_rect[0].top - text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].right,
+		text_overlay.text_outline_rect[0].bottom - text_border_thickness + 1);
+	SetRect(&text_overlay.text_outline_rect[7],
+		text_overlay.text_outline_rect[0].left + text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].top,
+		text_overlay.text_outline_rect[0].right + text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].bottom);
+	SetRect(&text_overlay.text_outline_rect[8],
+		text_overlay.text_outline_rect[0].left,
+		text_overlay.text_outline_rect[0].top + text_border_thickness + 1,
+		text_overlay.text_outline_rect[0].right,
+		text_overlay.text_outline_rect[0].bottom + text_border_thickness + 1);
 }

@@ -3,9 +3,46 @@
 
 #pragma once
 
+#include <d3dx9core.h>
+
+#define _SP_DEFAULT_TEXT_HEIGHT_ 28
+#define _SP_DEFAULT_TEXT_SHADOW_X_OFFSET_ 2
+#define _SP_DEFAULT_TEXT_SHADOW_Y_OFFSET_ 2
+#define _SP_DEFAULT_TEXT_BORDER_THICKNESS_ 2
+#define _SP_DEFAULT_TEXT_COLOR_ D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f)
+#define _SP_DEFAULT_TEXT_BORDER_COLOR_ D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f)
+#define _SP_DEFAULT_TEXT_SHADOW_COLOR_ D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f)
+#define _SP_DEFAULT_TEXT_FORMAT_ (DT_NOCLIP|DT_CENTER|DT_VCENTER)
+#define _SP_DEFAULT_TEXT_STYLE_ SP_DX9_BORDERED_TEXT
+#define _SP_DEFAULT_TEXT_FONT_ "Arial"
+
+enum SP_DX9_TEXT_OVERLAY_STYLES {
+	SP_DX9_BORDERED_TEXT,
+	SP_DX9_SHADOWED_TEXT,
+	SP_DX9_PLAIN_TEXT
+};
+
+typedef struct SP_DX9_FULLSCREEN_TEXT_OVERLAY {
+	RECT text_shadow_rect[2];
+	RECT text_outline_rect[9];
+	ID3DXFont* font;
+	TCHAR font_name[32];
+	LPCTSTR text;
+	DWORD text_format; // Positioning and clipping of text on screen
+	int text_style;	// Bordered, Shadowed, or Plain
+	D3DXCOLOR text_color;
+	D3DXCOLOR text_border_color;
+	D3DXCOLOR text_shadow_color;
+} SP_DX9_FULLSCREEN_TEXT_OVERLAY;
+
 class myIDirect3DDevice9 : public IDirect3DDevice9
 {
 public:
+
+	RECT window_rect;
+	SP_DX9_FULLSCREEN_TEXT_OVERLAY text_overlay; // Data structure for fullscreen text overlay
+	
+
     myIDirect3DDevice9(IDirect3DDevice9* pOriginal);
     virtual ~myIDirect3DDevice9(void);
 
@@ -134,6 +171,6 @@ public:
 private:
     IDirect3DDevice9 *m_pIDirect3DDevice9;
     
-	// This is our test function
-	void ShowWeAreHere(void);
+	void myIDirect3DDevice9::SP_DX9_init_text_overlay(int text_height, unsigned int text_border_thickness, int text_shadow_x_offset, int text_shadow_y_offset, D3DXCOLOR text_color, D3DXCOLOR text_border_color, D3DXCOLOR text_shadow_color, DWORD text_format, int text_style);
+	void myIDirect3DDevice9::SP_DX9_draw_text_overlay();
 };
